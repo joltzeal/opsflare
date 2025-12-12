@@ -19,6 +19,7 @@
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store
@@ -47,6 +48,31 @@ next-env.d.ts
 # wrangler files
 .wrangler
 .dev.vars*
-
-
 !.dev.vars.example
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local development
+*.local
+
+# Logs
+logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+document/
+.claude/
+.vscode/

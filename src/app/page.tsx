@@ -1,52 +1,112 @@
-import Image from "next/image";
+'use client';
+
+import { AuthGuard } from '@/components/AuthGuard';
+import { AccountSelector } from '@/components/AccountSelector';
+import { DomainList } from '@/components/DomainList';
+import { DomainDetails } from '@/components/DomainDetails';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card } from '@/components/ui/card';
+import { Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useStore } from '@/store/useStore';
+import { toast } from 'sonner';
 
 export default function Home() {
-	return (
-		<div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-			<main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-				<Image className="dark:invert" src="/next.svg" alt="Next.js logo" width={180} height={38} priority />
-				<ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-					<li className="mb-2 tracking-[-.01em]">
-						Get started by editing{" "}
-						<code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-							src/app/page.tsx
-						</code>
-						.
-					</li>
-					<li className="tracking-[-.01em]">Save and see your changes instantly.</li>
-				</ol>
+	const { googleApiKey, setGoogleApiKey } = useStore();
+	const [showSettings, setShowSettings] = useState(false);
+	const [apiKeyInput, setApiKeyInput] = useState(googleApiKey);
 
-				<div className="flex gap-4 items-center flex-col sm:flex-row">
-					<a
-						className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-						href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-						target="_blank"
-						rel="noopener noreferrer"
-					>
-						Read our docs
-					</a>
+	const handleSaveSettings = () => {
+		setGoogleApiKey(apiKeyInput);
+		setShowSettings(false);
+		toast.success('设置已保存');
+	};
+
+	return (
+		<AuthGuard>
+			<div className="h-screen flex flex-col">
+				{/* 全局页头 */}
+				<div className="p-4 flex justify-between items-center border-b bg-background">
+					<div>
+						<h1 className="text-xl font-bold">OpsFlare</h1>
+						<p className="text-xs text-muted-foreground">CloudFlare 管理工具</p>
+					</div>
+					<div className="flex gap-2">
+						<ThemeToggle />
+						<Button variant="outline" size="icon" onClick={() => setShowSettings(true)}>
+							<Settings className="h-4 w-4" />
+						</Button>
+					</div>
 				</div>
-			</main>
-			<footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-				<a
-					className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-					href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-					target="_blank"
-					rel="noopener noreferrer"
-				>
-					<Image aria-hidden src="/file.svg" alt="File icon" width={16} height={16} />
-					Learn
-				</a>
-				<a
-					className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-					href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-					target="_blank"
-					rel="noopener noreferrer"
-				>
-					<Image aria-hidden src="/globe.svg" alt="Globe icon" width={16} height={16} />
-					Go to nextjs.org →
-				</a>
-			</footer>
-		</div>
+
+				{/* 内容区 */}
+				<div className="flex-1 flex overflow-hidden">
+					{/* 左侧边栏 - 两列布局 */}
+					<div className="w-[600px] flex gap-4 p-4">
+						{/* 账户列表列 */}
+						<Card className="w-1/2 flex flex-col">
+							<div className="p-4 border-b">
+								<h2 className="text-sm font-semibold">账户列表</h2>
+							</div>
+							<ScrollArea className="flex-1 p-4">
+								<AccountSelector />
+							</ScrollArea>
+						</Card>
+
+						{/* 域名列表列 */}
+						<Card className="w-1/2 flex flex-col">
+							<div className="p-4 border-b">
+								<h2 className="text-sm font-semibold">域名列表</h2>
+							</div>
+							<ScrollArea className="flex-1 p-4">
+								<DomainList />
+							</ScrollArea>
+						</Card>
+					</div>
+
+					{/* 右侧内容区 */}
+					<div className="flex-1 overflow-hidden border-l">
+						<ScrollArea className="h-full">
+							<div className="p-6">
+								<DomainDetails />
+							</div>
+						</ScrollArea>
+					</div>
+				</div>
+			</div>
+
+			{/* 设置对话框 */}
+			<Dialog open={showSettings} onOpenChange={setShowSettings}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>设置</DialogTitle>
+						<DialogDescription>配置 Google Safe Browsing API Key</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4">
+						<div className="space-y-2">
+							<Label htmlFor="googleApiKey">Google Safe Browsing API Key</Label>
+							<Input
+								id="googleApiKey"
+								type="password"
+								value={apiKeyInput}
+								onChange={(e) => setApiKeyInput(e.target.value)}
+								placeholder="输入 API Key"
+							/>
+						</div>
+					</div>
+					<div className="flex justify-end gap-2">
+						<Button variant="outline" onClick={() => setShowSettings(false)}>
+							取消
+						</Button>
+						<Button onClick={handleSaveSettings}>保存</Button>
+					</div>
+				</DialogContent>
+			</Dialog>
+		</AuthGuard>
 	);
 }
