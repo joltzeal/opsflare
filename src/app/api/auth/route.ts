@@ -1,8 +1,6 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextResponse } from 'next/server';
 
-export const runtime = 'edge';
-
 // 获取密码配置
 export async function GET() {
   try {
@@ -21,7 +19,8 @@ export async function GET() {
 // 验证密码
 export async function POST(request: Request) {
   try {
-    const { password: inputPassword } = await request.json();
+    const body = await request.json() as { password: string };
+    const { password: inputPassword } = body;
     const { env } = await getCloudflareContext();
     const correctPassword = env.NEXT_PUBLIC_ACCESS_PASSWORD as string | undefined;
 
