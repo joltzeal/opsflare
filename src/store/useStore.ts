@@ -21,6 +21,7 @@ interface AppState {
   selectDomain: (domainId: string | null) => void;
   toggleDomainSelection: (domainId: string) => void; // 切换域名选中状态
   clearDomainSelection: () => void; // 清空多选
+  selectAllDomains: (domainIds: string[]) => void; // 全选域名
   updateDomainSafety: (domainId: string, safetyStatus: 'safe' | 'unsafe' | 'checking' | 'unknown', threats?: string[]) => void; // 更新域名安全状态
 
   // Google Safe Browsing API Key
@@ -94,6 +95,10 @@ export const useStore = create<AppState>()(
 
       clearDomainSelection: () => {
         set({ selectedDomains: [] });
+      },
+
+      selectAllDomains: (domainIds) => {
+        set({ selectedDomains: domainIds, selectedDomain: null });
       },
 
       updateDomainSafety: (domainId, safetyStatus, threats) => {

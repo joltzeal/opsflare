@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, RefreshCw, Shield, ShieldAlert, ShieldCheck, Loader2 } from 'lucide-react';
+import { Plus, RefreshCw, Shield, ShieldAlert, ShieldCheck, Loader2, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,7 +32,9 @@ export function DomainList() {
     selectedDomains,
     setDomains,
     selectDomain,
-    toggleDomainSelection
+    toggleDomainSelection,
+    selectAllDomains,
+    clearDomainSelection
   } = useStore();
   const [loading, setLoading] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -126,15 +128,46 @@ export function DomainList() {
 
   const filteredDomains = domains.filter((domain) => domain.accountEmail === selectedAccount);
 
+  // 全选/取消全选逻辑
+  const allSelected = filteredDomains.length > 0 && selectedDomains.length === filteredDomains.length;
+  const someSelected = selectedDomains.length > 0 && selectedDomains.length < filteredDomains.length;
+
+  const handleSelectAll = () => {
+    if (allSelected) {
+      clearDomainSelection();
+    } else {
+      selectAllDomains(filteredDomains.map(d => d.id));
+    }
+  };
+
   return (
     <div className="space-y-3">
-      <div className="flex justify-end gap-1">
-        <Button size="icon" variant="ghost" onClick={loadDomains} disabled={loading} title="刷新" className="h-8 w-8">
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-        </Button>
-        <Button size="icon" variant="ghost" onClick={() => setShowAddDialog(true)} title="批量添加" className="h-8 w-8">
-          <Plus className="h-4 w-4" />
-        </Button>
+      <div className="flex justify-between items-center gap-1">
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Checkbox
+              checked={allSelected || someSelected}
+              onCheckedChange={handleSelectAll}
+              title={allSelected ? "取消全选" : "全选"}
+            />
+            {someSelected && (
+              <Minus className="h-3 w-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary-foreground pointer-events-none" />
+            )}
+          </div>
+          {selectedDomains.length > 0 && (
+            <span className="text-xs text-muted-foreground">
+              已选 {selectedDomains.length} 项
+            </span>
+          )}
+        </div>
+        <div className="flex gap-1">
+          <Button size="icon" variant="ghost" onClick={loadDomains} disabled={loading} title="刷新" className="h-8 w-8">
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+          <Button size="icon" variant="ghost" onClick={() => setShowAddDialog(true)} title="批量添加" className="h-8 w-8">
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-1">

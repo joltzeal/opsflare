@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useStore } from '@/store/useStore';
 import CloudFlareService from '@/lib/cloudflare';
 import { DNSRecord, SSLMode } from '@/types';
@@ -21,10 +22,12 @@ export function DomainDetails() {
   const [recordName, setRecordName] = useState('');
   const [recordContent, setRecordContent] = useState('');
   const [loading, setLoading] = useState(false);
+  const [clearAllRecords, setClearAllRecords] = useState(false);
 
   // 批量添加解析的状态
   const [batchRecordName, setBatchRecordName] = useState('');
   const [batchRecordContent, setBatchRecordContent] = useState('');
+  const [batchClearAllRecords, setBatchClearAllRecords] = useState(false);
 
   const currentAccount = accounts.find((acc) => acc.email === selectedAccount);
   const currentDomain = domains.find((domain) => domain.id === selectedDomain);
@@ -108,6 +111,12 @@ export function DomainDetails() {
         apiKey: currentAccount.apiKey,
       });
 
+      // 如果勾选了清空所有记录，先删除所有记录
+      if (clearAllRecords && !selectedRecord) {
+        const deletedCount = await service.deleteAllDNSRecords(currentDomain.id);
+        toast.success(`已清空 ${deletedCount} 条 DNS 记录`);
+      }
+
       if (selectedRecord) {
         await service.updateDNSRecord(
           currentDomain.id,
@@ -125,6 +134,7 @@ export function DomainDetails() {
       setRecordName('');
       setRecordContent('');
       setSelectedRecord(null);
+      setClearAllRecords(false);
     } catch (error) {
       console.error('保存DNS记录失败:', error);
       toast.error('保存DNS记录失败');
@@ -148,6 +158,7 @@ export function DomainDetails() {
     setLoading(true);
     let successCount = 0;
     let failCount = 0;
+    let clearedCount = 0;
 
     try {
       const service = new CloudFlareService({
@@ -157,6 +168,12 @@ export function DomainDetails() {
 
       for (const domainId of selectedDomains) {
         try {
+          // 如果勾选了清空所有记录，先删除
+          if (batchClearAllRecords) {
+            const deleted = await service.deleteAllDNSRecords(domainId);
+            clearedCount += deleted;
+          }
+
           await service.addDNSRecord(domainId, batchRecordName, batchRecordContent);
           successCount++;
         } catch (error) {
@@ -165,10 +182,15 @@ export function DomainDetails() {
         }
       }
 
-      toast.success(`成功为 ${successCount} 个域名添加了 DNS 记录${failCount > 0 ? `，${failCount} 个失败` : ''}`);
+      const message = batchClearAllRecords
+        ? `已清空 ${clearedCount} 条记录，成功为 ${successCount} 个域名添加了 DNS 记录${failCount > 0 ? `，${failCount} 个失败` : ''}`
+        : `成功为 ${successCount} 个域名添加了 DNS 记录${failCount > 0 ? `，${failCount} 个失败` : ''}`;
+
+      toast.success(message);
 
       setBatchRecordName('');
       setBatchRecordContent('');
+      setBatchClearAllRecords(false);
       clearDomainSelection();
     } catch (error) {
       console.error('批量添加 DNS 记录失败:', error);
@@ -226,6 +248,20 @@ export function DomainDetails() {
                 onChange={(e) => setBatchRecordContent(e.target.value)}
                 placeholder="8.8.8.8"
               />
+            </div>
+
+            <div className="flex items-center space-x-2 py-2 px-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <Checkbox
+                id="batchClearAllRecords"
+                checked={batchClearAllRecords}
+                onCheckedChange={(checked) => setBatchClearAllRecords(checked as boolean)}
+              />
+              <label
+                htmlFor="batchClearAllRecords"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                添加前清空所有域名的现有 DNS 记录
+              </label>
             </div>
 
             <div className="flex gap-2">
@@ -309,6 +345,9 @@ export function DomainDetails() {
       <Card>
         <CardHeader>
           <CardTitle>DNS 记录 (A 记录)</CardTitle>
+          <CardDescription className="text-xs">
+            点击记录进行编辑，或填写下方表单添加新记录
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -333,9 +372,23 @@ export function DomainDetails() {
 
           {selectedRecord && (
             <div className="p-3 bg-muted rounded-lg">
-              <p className="text-sm mb-2">
-                当前记录: {selectedRecord.name} → {selectedRecord.content}
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm mb-0">
+                  正在编辑: {selectedRecord.name} → {selectedRecord.content}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedRecord(null);
+                    setRecordName('');
+                    setRecordContent('');
+                  }}
+                  className="h-6 text-xs"
+                >
+                  取消编辑
+                </Button>
+              </div>
             </div>
           )}
 
@@ -358,6 +411,22 @@ export function DomainDetails() {
               placeholder="8.8.8.8"
             />
           </div>
+
+          {!selectedRecord && (
+            <div className="flex items-center space-x-2 py-2 px-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <Checkbox
+                id="clearAllRecords"
+                checked={clearAllRecords}
+                onCheckedChange={(checked) => setClearAllRecords(checked as boolean)}
+              />
+              <label
+                htmlFor="clearAllRecords"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                添加前清空当前域名的所有 DNS 记录
+              </label>
+            </div>
+          )}
 
           <Button onClick={handleSaveDNSRecord} disabled={loading} className="w-full">
             <Save className="h-4 w-4 mr-2" />

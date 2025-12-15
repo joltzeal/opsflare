@@ -122,3 +122,44 @@ export async function PUT(
     );
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ zoneId: string }> }
+) {
+  try {
+    const email = request.headers.get('x-cf-email');
+    const apiKey = request.headers.get('x-cf-key');
+    const { zoneId } = await params;
+    const body = await request.json() as { recordId: string };
+    const { recordId } = body;
+
+    if (!email || !apiKey) {
+      return NextResponse.json(
+        { error: '缺少认证信息' },
+        { status: 401 }
+      );
+    }
+
+    const response = await fetch(
+      `${CLOUDFLARE_API_BASE}/zones/${zoneId}/dns_records/${recordId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'X-Auth-Email': email,
+          'X-Auth-Key': apiKey,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('删除DNS记录失败:', error);
+    return NextResponse.json(
+      { error: '删除DNS记录失败' },
+      { status: 500 }
+    );
+  }
+}

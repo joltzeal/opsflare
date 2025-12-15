@@ -34,7 +34,7 @@ export default function Home() {
 				<div className="p-4 flex justify-between items-center border-b bg-background">
 					<div>
 						<h1 className="text-xl font-bold">OpsFlare</h1>
-						<p className="text-xs text-muted-foreground">CloudFlare 管理工具</p>
+						<p className="text-xs text-muted-foreground">CloudFlare 管理工具 @ Power by <a href='https://t.me/amenotg' >Ameno</a></p>
 					</div>
 					<div className="flex gap-2">
 						<ThemeToggle />

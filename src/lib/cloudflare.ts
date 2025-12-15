@@ -204,6 +204,53 @@ class CloudFlareService {
     }
   }
 
+  async deleteDNSRecord(zoneId: string, recordId: string): Promise<void> {
+    try {
+      const response = await fetch(
+        `/api/cloudflare/zones/${zoneId}/dns`,
+        {
+          method: 'DELETE',
+          headers: this.getHeaders(),
+          body: JSON.stringify({
+            recordId,
+          }),
+        }
+      );
+
+      const data = await response.json() as CloudFlareAPIResponse<{ id: string }>;
+
+      if (!data.success) {
+        throw new Error(data.errors?.[0]?.message || '删除DNS记录失败');
+      }
+    } catch (error) {
+      console.error('删除DNS记录失败:', error);
+      throw error;
+    }
+  }
+
+  async deleteAllDNSRecords(zoneId: string): Promise<number> {
+    try {
+      // 先获取所有 DNS 记录
+      const records = await this.getDNSRecords(zoneId);
+      let deletedCount = 0;
+
+      // 逐个删除
+      for (const record of records) {
+        try {
+          await this.deleteDNSRecord(zoneId, record.id);
+          deletedCount++;
+        } catch (error) {
+          console.error(`删除 DNS 记录 ${record.id} 失败:`, error);
+        }
+      }
+
+      return deletedCount;
+    } catch (error) {
+      console.error('删除所有DNS记录失败:', error);
+      throw error;
+    }
+  }
+
   async getSSLSetting(zoneId: string): Promise<SSLMode> {
     try {
       const response = await fetch(
